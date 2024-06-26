@@ -3,7 +3,30 @@ import re
 from typing import List, Tuple
 
 class DependencyAnalyzer:
+    """
+    A class for analyzing dependencies between files in a project.
+
+    This class scans through files and extracts dependencies based on various patterns
+    for different file types (PHP, JavaScript, HTML, CSS).
+
+    Attributes:
+        files (List[str]): List of files to analyze.
+        root_dir (str): Root directory of the project.
+        exclude_images (bool): Whether to exclude image files from analysis.
+        handle_dynamic (bool): Whether to handle dynamic dependencies.
+        analyzed_files (set): Set of files that have been analyzed.
+    """
+
     def __init__(self, files: List[str], root_dir: str, exclude_images: bool = True, handle_dynamic: bool = True):
+        """
+        Initialize the DependencyAnalyzer.
+
+        Args:
+            files (List[str]): List of files to analyze.
+            root_dir (str): Root directory of the project.
+            exclude_images (bool, optional): Whether to exclude image files. Defaults to True.
+            handle_dynamic (bool, optional): Whether to handle dynamic dependencies. Defaults to True.
+        """
         self.files = files
         self.root_dir = root_dir
         self.exclude_images = exclude_images
@@ -11,12 +34,26 @@ class DependencyAnalyzer:
         self.analyzed_files = set()
 
     def analyze_dependencies(self) -> List[Tuple[str, str, str]]:
+        """
+        Analyze dependencies for all files.
+
+        Returns:
+            List[Tuple[str, str, str]]: List of edges representing dependencies.
+            Each edge is a tuple (source_file, target_file, root_dir).
+        """
         edge_list = []
         for file in self.files:
             self._analyze_file(file, edge_list)
         return edge_list
 
     def _analyze_file(self, file: str, edge_list: List[Tuple[str, str, str]]):
+        """
+        Analyze dependencies for a single file.
+
+        Args:
+            file (str): Path to the file to analyze.
+            edge_list (List[Tuple[str, str, str]]): List to append found dependencies.
+        """
         if file in self.analyzed_files:
             return
         self.analyzed_files.add(file)
@@ -47,10 +84,28 @@ class DependencyAnalyzer:
                     self._analyze_file(full_dep_path, edge_list)
 
     def is_dynamic(self, path: str) -> bool:
+        """
+        Check if a dependency path contains dynamic elements.
+
+        Args:
+            path (str): The dependency path to check.
+
+        Returns:
+            bool: True if the path contains dynamic elements, False otherwise.
+        """
         dynamic_indicators = ['${', '}', '+', '<?php', '?>']
         return any(indicator in path for indicator in dynamic_indicators) or re.search(r'\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*', path)
 
     def extract_dependencies(self, file_path: str) -> List[str]:
+        """
+        Extract dependencies from a file.
+
+        Args:
+            file_path (str): Path to the file to extract dependencies from.
+
+        Returns:
+            List[str]: List of extracted dependencies.
+        """
         dependencies = []
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
@@ -68,6 +123,16 @@ class DependencyAnalyzer:
         return [dep for dep in dependencies if not self.is_dynamic(dep)]
 
     def _extract_dependencies(self, content: str, patterns: List[str]) -> List[str]:
+        """
+        Extract dependencies from content using specified patterns.
+
+        Args:
+            content (str): The content to extract dependencies from.
+            patterns (List[str]): List of regex patterns to use for extraction.
+
+        Returns:
+            List[str]: List of extracted dependencies.
+        """
         dependencies = []
         for pattern in patterns:
             matches = re.findall(pattern, content, re.IGNORECASE)
@@ -81,6 +146,15 @@ class DependencyAnalyzer:
         return dependencies
 
     def _is_external_dependency(self, path: str) -> bool:
+        """
+        Check if a dependency path is external (e.g., a URL).
+
+        Args:
+            path (str): The dependency path to check.
+
+        Returns:
+            bool: True if the path is an external dependency, False otherwise.
+        """
         external_patterns = [
             r'^https?://',
             r'^//',
@@ -89,6 +163,7 @@ class DependencyAnalyzer:
         ]
         return any(re.match(pattern, path, re.IGNORECASE) for pattern in external_patterns)
 
+    # Regex patterns for different file types
     php_patterns = [
         r'(?:include|require)(?:_once)?\s*[\'"]([^\'"]+)[\'"]',
         r'use\s+([^;]+)',
@@ -120,5 +195,14 @@ class DependencyAnalyzer:
 
     @staticmethod
     def is_image_file(file_path: str) -> bool:
+        """
+        Check if a file is an image based on its extension.
+
+        Args:
+            file_path (str): The file path to check.
+
+        Returns:
+            bool: True if the file is an image, False otherwise.
+        """
         image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp']
         return any(file_path.lower().endswith(ext) for ext in image_extensions)
