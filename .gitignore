@@ -1,4 +1,5 @@
 out/
+example/
 
 __pycache__/
 *.py[cod]
